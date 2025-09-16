@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const thresholdRoutes = require("./routes/thresholdRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
+const stockRoutes = require("./routes/stockRoutes")
 const authMiddleware = require("./middlewares/authMiddleware");
 
 const http = require("http");
@@ -22,6 +23,7 @@ mongoose
 
 app.use("/api", authMiddleware("user"), thresholdRoutes);
 app.use("/user", authMiddleware("user"), userRoutes);
+app.use("/stocks", authMiddleware("user"), stockRoutes);
 app.use("/admin", authMiddleware("admin"), adminRoutes);
 
 // ✅ Create HTTP server and attach Socket.IO
