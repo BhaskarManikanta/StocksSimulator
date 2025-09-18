@@ -6,6 +6,8 @@ const adminRoutes = require("./routes/adminRoutes");
 const userRoutes = require("./routes/userRoutes");
 const stockRoutes = require("./routes/stockRoutes")
 const authMiddleware = require("./middlewares/authMiddleware");
+const jwt = require("jsonwebtoken");
+
 
 const http = require("http");
 const { Server } = require("socket.io");
@@ -21,8 +23,8 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error(err));
 
-app.use("/api", authMiddleware("user"), thresholdRoutes);
-app.use("/user", authMiddleware("user"), userRoutes);
+app.use("/api", thresholdRoutes);
+app.use("/user", userRoutes);
 app.use("/stocks", authMiddleware("user"), stockRoutes);
 app.use("/admin", authMiddleware("admin"), adminRoutes);
 
@@ -51,20 +53,30 @@ io.use((socket, next) => {
   }
 });
 
-// Handle client connections
-io.on("connection", (socket) => {
-  console.log(`⚡ User connected: ${socket.user.email}`);
 
-  // Auto-join user into a room using their email
-  socket.join(socket.user.email);
+io.on("connection", (socket) => {
+  console.log("⚡ New client connected");
+
+  // User subscribes to a stock symbol
+  socket.on("subscribe", (symbol) => {
+    console.log(`📌 Client subscribed to ${symbol}`);
+    socket.join(symbol);
+  });
+
+  // User unsubscribes
+  socket.on("unsubscribe", (symbol) => {
+    console.log(`📌 Client unsubscribed from ${symbol}`);
+    socket.leave(symbol);
+  });
 
   socket.on("disconnect", () => {
-    console.log(`❌ User disconnected: ${socket.user.email}`);
+    console.log("❌ Client disconnected");
   });
 });
 
 
-const PORT = 4000;
+
+const PORT = 5001;
 server.listen(PORT, () => console.log(`Server + WebSocket on port ${PORT}`));
 
 // ✅ Export io so consumer can emit events

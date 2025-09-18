@@ -15,5 +15,17 @@ router.get("/history/:symbol", async (req, res) => {
   }
 });
 
+/**
+ * Get all available stocks
+ */
+router.get("/stocks", async (req, res) => {
+  try {
+    const stocks = await Stock.find({}, { __v: 0 }).sort({ symbol: 1 });
+    res.json(stocks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 module.exports = router;

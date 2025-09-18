@@ -28,37 +28,42 @@ async function consume() {
       await newPrice.save();
 
       // ✅ Broadcast real-time stock price
-      io.emit("stock-price", stockData);
-
+      io.to(stockData.symbol).emit("stock-price", stockData);
 
       // 🔔 Threshold check
       const thresholds = await Threshold.find({ symbol: stockData.symbol });
       for (const t of thresholds) {
-        if (stockData.price >= t.limit) {
-          const now = new Date();
-          const cooldownMs = 5 * 60 * 1000;
+        const now = new Date();
+        const cooldownMs = 5 * 60 * 1000;
 
-          if (!t.lastNotifiedAt || now - t.lastNotifiedAt > cooldownMs) {
-            await sendEmail(
-              t.email,
-              `Stock Alert: ${t.symbol}`,
-              `${t.symbol} has reached price ${stockData.price}, exceeding your threshold ${t.limit}`
-            );
+        let shouldAlert = false;
 
-            io.to(t.email).emit("stock-alert", {
-              symbol: t.symbol,
-              price: stockData.price,
-              limit: t.limit,
-              time: now,
-            });
-
-            await Threshold.updateOne(
-              { _id: t._id },
-              { $set: { lastNotifiedAt: now } }
-            );
-          }
+        if (t.direction === "above" && stockData.price >= t.limit) {
+          shouldAlert = true;
+        } else if (t.direction === "below" && stockData.price <= t.limit) {
+          shouldAlert = true;
         }
-      }
+
+        if (shouldAlert) {
+          if (!t.lastNotifiedAt || now - t.lastNotifiedAt > cooldownMs) {
+            console.log(`📩 Sending alert to ${t.email} for ${t.symbol}`);
+
+      // Send Email
+        await sendEmail(
+          t.email,
+          `Stock Alert: ${t.symbol}`,
+          `${t.symbol} has ${t.direction === "above" ? "risen above" : "fallen below"} ${
+          t.limit
+          }. Current price: ${stockData.price}`);
+
+      // Update lastNotifiedAt
+      await Threshold.updateOne(
+        { _id: t._id },
+        { $set: { lastNotifiedAt: now } }
+      );
+    }
+  }
+}
     },
   });
 }
