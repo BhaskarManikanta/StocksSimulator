@@ -38,7 +38,7 @@ router.post("/thresholds", async (req, res) => {
  */
 router.delete("/thresholds", async (req, res) => {
   try {
-    const { email, symbol, direction = "above" } = req.body;
+    const { email, symbol, limit, direction  } = req.body;
 
     if (!email || !symbol) {
       return res
@@ -46,7 +46,7 @@ router.delete("/thresholds", async (req, res) => {
         .json({ error: "Email, symbol, and direction are required" });
     }
 
-    const deleted = await Threshold.findOneAndDelete({ email, symbol, direction });
+    const deleted = await Threshold.findOneAndDelete({ email, symbol, limit, direction });
 
     if (!deleted) {
       return res.status(404).json({ error: "Threshold not found" });

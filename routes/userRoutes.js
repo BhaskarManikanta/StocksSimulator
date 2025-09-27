@@ -8,7 +8,7 @@ const router = express.Router();
 
 router.post("/signup", async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role="user" } = req.body;
 
     // Check if user exists
     const existing = await User.findOne({ email });
@@ -44,8 +44,8 @@ router.post("/login", async (req, res) => {
       "your_secret_key", 
       { expiresIn: "1d" }
     );
-
-    res.json({ token });
+    console.log(user.email)
+    res.json({ token , email:user.email });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

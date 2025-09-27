@@ -1,6 +1,7 @@
 const express = require("express");
 const StockPrice = require("../models/StockPrice");
 const router = express.Router();
+const Stock = require('../models/Stock')
 
 router.get("/history/:symbol", async (req, res) => {
   const { symbol } = req.params;
@@ -20,7 +21,7 @@ router.get("/history/:symbol", async (req, res) => {
  */
 router.get("/stocks", async (req, res) => {
   try {
-    const stocks = await Stock.find({}, { __v: 0 }).sort({ symbol: 1 });
+    const stocks = await Stock.find({}).sort({ symbol: 1 });
     res.json(stocks);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -4,7 +4,7 @@ const thresholdSchema = new mongoose.Schema({
   email: { type: String, required: true },
   symbol: { type: String, required: true },
   limit: { type: Number, required: true },
-  direction: { type: String, enum: ["above", "below"], default: "above" }, // 🔥 new field
+  direction: { type: String, enum: ["above", "below"], default: "above" }, 
   lastNotifiedAt: { type: Date, default: null },
 });
 

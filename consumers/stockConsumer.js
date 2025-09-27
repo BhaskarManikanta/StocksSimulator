@@ -2,13 +2,8 @@ const { consumer } = require("../utils/kafka");
 const Threshold = require("../models/Threshold");
 const StockPrice = require("../models/StockPrice"); 
 const { sendEmail } = require("../utils/email");
-const mongoose = require("mongoose");
 const io = require("../server");
 
-mongoose
-  .connect("mongodb+srv://<username>:<password>@cluster0.sgdkk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error(err));
 
 async function consume() {
   await consumer.connect();
@@ -28,7 +23,7 @@ async function consume() {
       await newPrice.save();
 
       // ✅ Broadcast real-time stock price
-      io.to(stockData.symbol).emit("stock-price", stockData);
+      io.emit("stock-price", stockData);
 
       // 🔔 Threshold check
       const thresholds = await Threshold.find({ symbol: stockData.symbol });
@@ -55,6 +50,14 @@ async function consume() {
           `${t.symbol} has ${t.direction === "above" ? "risen above" : "fallen below"} ${
           t.limit
           }. Current price: ${stockData.price}`);
+        
+          io.to(t.email).emit("stock-alert", {
+            symbol: t.symbol,
+            price: stockData.price,
+            limit: t.limit,
+            direction: t.direction,
+            time: now,
+          });
 
       // Update lastNotifiedAt
       await Threshold.updateOne(
