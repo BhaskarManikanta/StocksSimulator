@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
 
+require('dotenv').config();
+
 const authMiddleware = (role) => {
   return (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -11,7 +13,7 @@ const authMiddleware = (role) => {
     const token = authHeader.split(" ")[1];
 
     try {
-      const decoded = jwt.verify(token, "your_secret_key"); 
+      const decoded = jwt.verify(token, process.env.SECRET); 
       req.user = decoded;
 
       if (role && decoded.role !== role) {

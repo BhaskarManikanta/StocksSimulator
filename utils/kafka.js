@@ -1,12 +1,19 @@
-const { Kafka } = require("kafkajs");
+const { Kafka } = require('kafkajs');
+const fs = require('fs');
+require('dotenv').config();
 
-const dotenv = require('dotenv')
-
-dotenv.config();
+// Load CA certificate
+const ssl = {
+  rejectUnauthorized: true,
+  ca: [fs.readFileSync('./ca.pem', 'utf-8')],
+  cert: fs.readFileSync("./service.cert", "utf-8"),
+  key: fs.readFileSync("./service.key", "utf-8"),
+};
 
 const kafka = new Kafka({
-  clientId: "stock-app",
-  brokers: [process.env.KAFKA_BROKER || "localhost:9092"], 
+  clientId: 'my-node-app',
+  brokers: [process.env.KAFKA_URI],
+  ssl,
 });
 
 const producer = kafka.producer();

@@ -1,10 +1,11 @@
 const { producer } = require("../utils/kafka");
 const Stock = require("../models/Stock");
 const mongoose = require("mongoose");
+require('dotenv').config();
 
 async function produce() {
   await mongoose
-    .connect("mongodb+srv://bhaskarabbisetti9:Abm13abm13@cluster0.sgdkk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+    .connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB connected"))
     .catch((err) => console.error("❌ MongoDB error:", err));
 

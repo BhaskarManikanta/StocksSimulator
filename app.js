@@ -8,15 +8,18 @@ const userRoutes = require("./routes/userRoutes");
 const stockRoutes = require("./routes/stockRoutes");
 const authMiddleware = require("./middlewares/authMiddleware");
 const cors = require('cors')
+const dotenv = require('dotenv')
+
+dotenv.config()
 
 const app = express();
 
-app.use(cors({ origin: "http://localhost:3000", credentials: true }));
+app.use(cors({ origin: "*" }));
 app.use(bodyParser.json());
 
 // MongoDB connect
 mongoose
-  .connect("mongodb+srv://bhaskarabbisetti9:Abm13abm13@cluster0.sgdkk.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error(err));
 
