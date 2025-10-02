@@ -82,7 +82,7 @@ async function produce() {
     } catch (err) {
       console.error("❌ Kafka send failed:", err.message);
     }
-  }, 1500);
+  }, 30000);
 }
 
 produce().catch(console.error);

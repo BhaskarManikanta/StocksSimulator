@@ -45,7 +45,7 @@ router.post("/login", async (req, res) => {
       { expiresIn: "1d" }
     );
     console.log(user.email)
-    res.json({ token , email:user.email });
+    res.json({ token , email:user.email , joinAt:user.joinAt });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

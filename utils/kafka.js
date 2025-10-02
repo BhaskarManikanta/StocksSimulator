@@ -1,8 +1,12 @@
 const { Kafka } = require("kafkajs");
 
+const dotenv = require('dotenv')
+
+dotenv.config();
+
 const kafka = new Kafka({
   clientId: "stock-app",
-  brokers: ["localhost:9094"], 
+  brokers: [process.env.KAFKA_BROKER || "localhost:9092"], 
 });
 
 const producer = kafka.producer();

@@ -35,7 +35,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => console.log("❌ Client disconnected"));
 });
 
-const PORT = 3001;
+const PORT = 3000;
 server.listen(PORT, () => console.log(`🚀 Server + WebSocket running on ${PORT}`));
 // Export io for consumer.js
 module.exports = io;
