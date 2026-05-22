@@ -83,61 +83,130 @@ This project is a **real-time stock monitoring backend system** that allows user
 
 ---
 
-## Installation & Setup
+# Installation & Setup
 
-# 1. Clone the repository
-git clone https://github.com/yourusername/stock-price-alert-backend.git
+## Prerequisites
 
-# 2. Install dependencies
-npm install
+Make sure the following are installed on your system:
 
-# 3. Set up MongoDB and Kafka using Docker
-# Create a file named docker-compose.yml with the following content:
-cat <<EOL > docker-compose.yml
-version: '3.8'
+- Docker Compose Plugin
+- Git
 
-services:
-  kafka:
-    image: bitnami/kafka:latest
-    container_name: kafka
-    ports:
-      - "9092:9092"
-    environment:
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_CFG_PROCESS_ROLES=broker,controller
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
-      - ALLOW_PLAINTEXT_LISTENER=yes
+Verify installation:
 
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
-    ports:
-      - "8080:8080"
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=local-cluster
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
-      - KAFKA_CLUSTERS_0_READONLY=false
-      - KAFKA_CLUSTERS_0_TOPIC_AUTO_CREATE=true
-EOL
+```bash
+docker --version
+docker compose version
+git --version
+```
 
-# Start Kafka and Kafka UI
-docker-compose up -d
+---
 
-# 4. Configure environment variables
-# Create a .env file in the project root with the following content:
-cat <<EOL > .env
-MONGO_URI=<your-mongodb-uri>
-JWT_SECRET=<your-jwt-secret>
-EMAIL_USER=<your-email>
-EMAIL_PASS=<your-email-app-password>
-EOL
+# Clone Repositorie
 
-# 5. Start the backend server
-npm start
+```bash
+git clone https://github.com/BhaskarManikanta/StocksSimulator.git
+```
 
-# 6. Start Kafka producer to simulate stock prices
-node services/producer.js
+# Project Structure
 
-# 7. Start Kafka consumer to handle alerts
-node services/consumer.js
+After cloning:
+
+```bash
+project/
+│
+├── StocksSimulator/
+
+```
+
+# Environment Variables
+
+Inside the repository:
+
+```bash
+cd StocksSimulator
+```
+
+Create `.env` file:
+
+```env
+PORT=3000
+
+MONGO_URI=your_mongodb_connection_string
+
+JWT_SECRET=your_secret_key
+
+EMAIL_USER=your_email
+
+EMAIL_PASS=your_email_password
+
+KAFKA_BROKER=kafka:9092
+```
+
+# Running the Application
+
+## Start All Services
+
+```bash
+docker compose up -d
+```
+
+---
+
+## Build & Start Services
+
+```bash
+docker compose up --build -d
+```
+
+---
+
+## View Running Containers
+
+```bash
+docker ps
+```
+
+---
+
+## View Logs
+
+```bash
+docker compose logs -f
+```
+
+---
+
+## Stop Services
+
+```bash
+docker compose down
+```
+
+---
+
+# Accessing Services
+
+| Service | URL |
+|---|---|
+| Frontend | http://YOUR_EC2_PUBLIC_IP |
+| Backend API | http://YOUR_EC2_PUBLIC_IP:3000 |
+| Kafka UI | http://YOUR_EC2_PUBLIC_IP:8080 |
+
+---
+
+# Kafka UI
+
+Kafka UI can be used to:
+- Monitor Kafka topics
+- Inspect producer/consumer activity
+- View Kafka messages
+- Debug event streams
+
+---
+
+# Important Notes
+
+- Replace `YOUR_EC2_PUBLIC_IP` with your AWS EC2 public IP address.
+- Ensure ports `80`, `3000`, `8080`, `9092`, and `29092` are allowed in AWS Security Groups.
+- The frontend communicates with the backend through Docker networking.
