@@ -1,89 +1,133 @@
 const { producer } = require("../utils/kafka");
 const Stock = require("../models/Stock");
-const mongoose = require("mongoose");
-require('dotenv').config();
+require("dotenv").config();
+const app = require("../app")
+let stocks = [];
+const priceMap = new Map();
 
-async function produce() {
-  await mongoose
-    .connect(process.env.MONGO_URI)
-    .then(() => console.log("✅ MongoDB connected"))
-    .catch((err) => console.error("❌ MongoDB error:", err));
+const TOPIC = "stock-prices";
+const REFRESH_INTERVAL = 60 * 60 * 1000; // 1 hour
+const PRODUCE_INTERVAL = 30 * 1000; // 30 sec
 
-  await producer.connect();
+// -------------------------------------
+// Load Stocks
+// -------------------------------------
+async function loadStocks() {
+  try {
+    const latestStocks = await Stock.find().lean();
 
-  // ✅ Stock cache
-  let stocks = await Stock.find();
-  if (!stocks.length) {
-    console.error("⚠️ No stocks found in DB. Seed Stock collection first.");
-    return;
-  }
-  console.log(`Loaded ${stocks.length} stocks into cache.`);
+    if (!latestStocks.length) {
+      console.warn("⚠️ No stocks found");
+      return;
+    }
 
-  // ✅ Track current prices in memory
-  const priceMap = {};
-  for (const s of stocks) {
-    priceMap[s.symbol] = +(Math.random() * 200 + 100).toFixed(2); // initial price
-  }
+    stocks = latestStocks;
 
-  // ♻️ Refresh stock cache every 1 hour
-  setInterval(async () => {
-    try {
-      const latestStocks = await Stock.find();
-      console.log("♻️ Stock list refreshed. Count:", latestStocks.length);
+    const currentSymbols = new Set();
 
-      // Replace stocks cache
-      stocks = latestStocks;
+    for (const stock of stocks) {
+      const symbol = stock.symbol;
 
-      // Add base price for new stocks
-      for (const s of stocks) {
-        if (!priceMap[s.symbol]) {
-          priceMap[s.symbol] = +(Math.random() * 200 + 100).toFixed(2);
-          console.log(`🆕 Added ${s.symbol} with base price ${priceMap[s.symbol]}`);
-        }
+      currentSymbols.add(symbol);
+
+      // Add initial price if not exists
+      if (!priceMap.has(symbol)) {
+        priceMap.set(
+          symbol,
+          +(Math.random() * 200 + 100).toFixed(2)
+        );
+
+        console.log(`🆕 Added ${symbol}`);
       }
-
-      // Remove prices for deleted stocks
-      Object.keys(priceMap).forEach((symbol) => {
-        if (!stocks.find((s) => s.symbol === symbol)) {
-          delete priceMap[symbol];
-          console.log(`🗑️ Removed ${symbol} from price map`);
-        }
-      });
-    } catch (err) {
-      console.error("❌ Failed to refresh stock list:", err.message);
     }
-  }, 3600 * 1000);
 
-  // Produce updated prices every 10 sec
-  setInterval(async () => {
-    if (!stocks.length) return;
-
-    const randomStock = stocks[Math.floor(Math.random() * stocks.length)];
-    const symbol = randomStock.symbol;
-
-    // random walk: move ±2%
-    let currentPrice = priceMap[symbol];
-    const changePercent = (Math.random() - 0.5) * 0.04; // -2% to +2%
-    currentPrice = +(currentPrice * (1 + changePercent)).toFixed(2);
-
-    // clamp to range
-    if (currentPrice < 50) currentPrice = 50;
-    if (currentPrice > 1000) currentPrice = 1000;
-
-    priceMap[symbol] = currentPrice;
-
-    const msg = { symbol, price: currentPrice, ts: new Date().toISOString() };
-
-    try {
-      await producer.send({
-        topic: "stock-prices",
-        messages: [{ value: JSON.stringify(msg) }],
-      });
-      console.log("📈 Produced:", msg);
-    } catch (err) {
-      console.error("❌ Kafka send failed:", err.message);
+    // Remove deleted stocks
+    for (const symbol of priceMap.keys()) {
+      if (!currentSymbols.has(symbol)) {
+        priceMap.delete(symbol);
+        console.log(`🗑️ Removed ${symbol}`);
+      }
     }
-  }, 30000);
+
+    console.log(`✅ Loaded ${stocks.length} stocks`);
+  } catch (err) {
+    console.error("❌ Failed to load stocks:", err.message);
+  }
 }
 
-produce().catch(console.error);
+// -------------------------------------
+// Generate Random Price
+// -------------------------------------
+function generatePrice(currentPrice) {
+  const changePercent = (Math.random() - 0.5) * 0.04;
+
+  let updatedPrice = currentPrice * (1 + changePercent);
+
+  // Clamp values
+  updatedPrice = Math.max(50, Math.min(1000, updatedPrice));
+
+  return +updatedPrice.toFixed(2);
+}
+
+// -------------------------------------
+// Produce Stock Message
+// -------------------------------------
+async function produceStockPrice() {
+  try {
+    if (!stocks.length) return;
+
+    const stock =
+      stocks[Math.floor(Math.random() * stocks.length)];
+
+    const symbol = stock.symbol;
+
+    const updatedPrice = generatePrice(
+      priceMap.get(symbol)
+    );
+
+    priceMap.set(symbol, updatedPrice);
+
+    const message = {
+      symbol,
+      price: updatedPrice,
+      ts: Date.now(),
+    };
+
+    await producer.send({
+      topic: TOPIC,
+      messages: [
+        {
+          key: symbol,
+          value: JSON.stringify(message),
+        },
+      ],
+    });
+
+    console.log("📈 Produced:", message);
+  } catch (err) {
+    console.error("❌ Produce failed:", err.message);
+  }
+}
+
+// -------------------------------------
+// Start Producer
+// -------------------------------------
+async function startProducer() {
+  try {
+    await producer.connect();
+    console.log("✅ Kafka Producer Connected");
+
+    await loadStocks();
+
+    // Refresh stocks periodically
+    setInterval(loadStocks, REFRESH_INTERVAL);
+
+    // Produce messages periodically
+    setInterval(produceStockPrice, PRODUCE_INTERVAL);
+  } catch (err) {
+    console.error("❌ Producer startup failed:", err.message);
+    process.exit(1);
+  }
+}
+
+module.exports = startProducer;

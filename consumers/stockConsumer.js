@@ -71,4 +71,4 @@ async function consume() {
   });
 }
 
-consume().catch(console.error);
+module.exports = consume;

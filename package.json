@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"node producers/stockProducer.js\" \"node consumers/stockConsumer.js\""
+    "dev": "node bootstrap.js"
   },
   "keywords": [],
   "author": "",
